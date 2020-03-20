@@ -1,7 +1,7 @@
 # Slap it!
 A simple decals addon for Blender 2.8+
 
-Demo:
+Demo: https://youtu.be/zqwmFhVqjV0
 
 ## Download and installation
 
@@ -18,5 +18,5 @@ Demo:
 
 The addon uses blenders knife project feature. So you can use it not only on plains but on any object that can be projected. If there are issues with the knife project, they appear in the script.
 
-You can support me on Gumroad, if you like my work. 
+You can support me on Gumroad, if you like my work. https://gum.co/litSq
 
