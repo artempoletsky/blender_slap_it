@@ -149,8 +149,8 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         bpy.ops.object.delete()
         C.scene.camera = old_camera
-#        source_decal_object.select_set(True)
-#        C.view_layer.objects.active = source_decal_object
+        source_decal_object.select_set(True)
+        C.view_layer.objects.active = source_decal_object
 
         return {'FINISHED'}
 
