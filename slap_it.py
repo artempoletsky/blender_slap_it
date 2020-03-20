@@ -132,6 +132,7 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.object.modifier_add(type='DATA_TRANSFER')
 
         decal_object.data.use_auto_smooth = True
+        decal_object.cycles_visibility.shadow = False
         mod = decal_object.modifiers["DataTransfer"]
         mod.object = target_object
         mod.use_loop_data = True
@@ -148,8 +149,8 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         bpy.ops.object.delete()
         C.scene.camera = old_camera
-        source_decal_object.select_set(True)
-        C.view_layer.objects.active = source_decal_object
+#        source_decal_object.select_set(True)
+#        C.view_layer.objects.active = source_decal_object
 
         return {'FINISHED'}
 
