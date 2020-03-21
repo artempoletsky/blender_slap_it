@@ -1,7 +1,7 @@
 # Slap it!
 A simple decals addon for Blender 2.8+
 
-Demo: https://youtu.be/zqwmFhVqjV0
+Demo: https://www.youtube.com/watch?v=meq--NcBFFM
 
 ## Download and installation
 
