@@ -1,15 +1,3 @@
-bl_info = {
-    "name": "Slap it!",
-    "author": "Artem Poletsky",
-    "version": (1, 0),
-    "blender": (2, 80, 0),
-# "location": "View3D > Add > Mesh > New Object",
-    "description": "A simple decals addon",
-    "warning": "",
-    "wiki_url": "",
-    "category": "Mesh",
-}
-
 import bpy
 
 def view3d_find( return_area = False ):
@@ -153,25 +141,3 @@ class SlapItOperator(bpy.types.Operator):
         C.view_layer.objects.active = source_decal_object
 
         return {'FINISHED'}
-
-def menu_func(self, context):
-    layout = self.layout
-    layout.separator()
-
-    layout.operator_context = "INVOKE_DEFAULT"
-    layout.operator(SlapItOperator.bl_idname, text=SlapItOperator.bl_label)
-
-
-def register():
-    bpy.utils.register_class(SlapItOperator)
-
-    bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
-
-
-def unregister():
-    bpy.utils.unregister_class(SlapItOperator)
-
-    bpy.types.VIEW3D_MT_object_context_menu.remove(menu_func)
-
-if __name__ == "__main__":
-    register()
