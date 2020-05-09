@@ -41,9 +41,9 @@ def knife_override(selected, edit):
         'selected_objects' : selected,
         'edit_object'      : edit
     }
-    
+
     return override
-    
+
 
 class SlapItOperator(bpy.types.Operator):
     """Slap decal on mesh"""
@@ -55,11 +55,11 @@ class SlapItOperator(bpy.types.Operator):
         return len(context.selected_objects) == 2
 
     def execute(self, context):
-        
+
         C = bpy.context
         target_object = C.object
         selected = C.selected_objects
-      
+
         selected.remove(target_object)
         source_decal_object = selected[0]
         source_decal_object.select_set(False)
@@ -68,24 +68,24 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.object.duplicate()
         decal_object = C.object
         bpy.ops.object.convert(target='MESH')
-        
+
         bpy.ops.object.select_all(action='DESELECT')
-        
+
         source_decal_object.select_set(True)
         C.view_layer.objects.active = source_decal_object
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.object.editmode_toggle()
-        
+
         override = knife_override([source_decal_object, decal_object], decal_object)
-        
+
         bpy.ops.object.camera_add()
         camera = C.object
         old_camera = C.scene.camera
         C.scene.camera = camera
         bpy.ops.view3d.camera_to_view()
         camera.select_set(False)
-        
+
         decal_object.select_set(True)
         source_decal_object.select_set(True)
         C.view_layer.objects.active = source_decal_object
@@ -93,10 +93,10 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         C.view_layer.objects.active = decal_object
         bpy.ops.object.editmode_toggle()
-       
+
         bpy.ops.mesh.knife_project(override);
-        
-        
+
+
         bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
         bpy.ops.mesh.select_all(action='INVERT')
         #bpy.ops.mesh.select_linked_pick(deselect=True, delimit=set(), index=1)
@@ -105,30 +105,30 @@ class SlapItOperator(bpy.types.Operator):
         C.view_layer.objects.active = source_decal_object
         decal_object.select_set(True)
         bpy.ops.object.make_links_data(type='MATERIAL')
-        
+
         C.view_layer.objects.active = decal_object
         source_decal_object.select_set(False)
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.select_all(action='SELECT')
-        
+
         override = {'area': override['area'], 'region': override['region'], 'edit_object': decal_object}
         bpy.ops.uv.project_from_view(override, camera_bounds = False, scale_to_bounds=True, correct_aspect=True)
-        
+
         bpy.ops.object.editmode_toggle()
         bpy.ops.object.select_all(action='DESELECT')
-        
-                
+
+
         decal_object.name = 'Slap ' + source_decal_object.name
-        
+
         decal_object.select_set(True)
         C.view_layer.objects.active = decal_object
-        
-        
+
+
         bpy.ops.object.modifier_add(type='DISPLACE')
 
         mod = decal_object.modifiers["Displace"]
         mod.strength = 0.001
-        
+
         bpy.ops.object.modifier_add(type='DATA_TRANSFER')
 
         decal_object.data.use_auto_smooth = True
@@ -138,12 +138,12 @@ class SlapItOperator(bpy.types.Operator):
         mod.use_loop_data = True
         mod.data_types_loops = {'CUSTOM_NORMAL'}
         mod.loop_mapping = 'POLYINTERP_NEAREST'
-        
+
         decal_object.select_set(False)
-        
+
         camera.select_set(True)
         C.view_layer.objects.active = camera
-       
+
 #        bpy.ops.action.view_frame(override)
         bpy.ops.view3d.view_camera(override)
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
@@ -159,18 +159,18 @@ def menu_func(self, context):
     layout.separator()
 
     layout.operator_context = "INVOKE_DEFAULT"
-    layout.operator('object.slap_it_operator', text='Slap it!')
+    layout.operator(SlapItOperator.bl_idname, text=SlapItOperator.bl_label)
 
 
 def register():
     bpy.utils.register_class(SlapItOperator)
-    
+
     bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
 
 
 def unregister():
     bpy.utils.unregister_class(SlapItOperator)
-    
+
     bpy.types.VIEW3D_MT_object_context_menu.remove(menu_func)
 
 if __name__ == "__main__":
