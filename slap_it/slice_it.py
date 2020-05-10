@@ -31,6 +31,13 @@ def select_only(context, object):
     object.select_set(True)
 
 def sort_loops(face):
+    if len(face.edges[0].link_faces) == 1 and len(face.edges[2].link_faces) == 1:
+        loops = []
+        loops.append(face.loops[3].index)
+        loops.append(face.loops[0].index)
+        loops.append(face.loops[1].index)
+        loops.append(face.loops[2].index)
+        return loops
     return [l.index for l in face.loops]
 
 class SliceItOperator(bpy.types.Operator):
@@ -48,6 +55,9 @@ class SliceItOperator(bpy.types.Operator):
     def assign_material(self, context, slice_decal):
         mod = slice_decal.modifiers.new('Displace', 'DISPLACE')
         mod.strength = 0.01
+        materials = slice_decal.data.materials
+        materials.clear()
+        materials.append(bpy.data.materials[0])
         return
 
     def unwrap_slice_decal(self, context, slice_decal):
