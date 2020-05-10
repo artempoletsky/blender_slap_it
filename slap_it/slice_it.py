@@ -30,6 +30,18 @@ def select_only(context, object):
     context.view_layer.objects.active = object
     object.select_set(True)
 
+from mathutils import geometry
+ # mathutils.geometry.distance_point_to_plane(pt, plane_co, plane_no)
+
+def is_face_on_surface(face, bm):
+    median = face.calc_center_median()
+    min_distance = float('inf')
+    for f in bm.faces:
+        d = abs(geometry.distance_point_to_plane(median, f.verts[0].co, f.normal))
+        min_distance = min(min_distance, d)
+    # print(min_distance)
+    return min_distance < 0.1
+
 def sort_loops(face):
     if len(face.edges[0].link_faces) == 1 and len(face.edges[2].link_faces) == 1:
         loops = []
@@ -113,10 +125,23 @@ class SliceItOperator(bpy.types.Operator):
 
         mops.select_mode(type='VERT', use_extend = False, use_expand = False)
         mops.intersect_boolean(operation = 'INTERSECT')
+        bm = bmesh.from_edit_mesh(slice_decal.data)
         if self._stop_after_intersect:
             raise
-        mops.select_all(action = 'INVERT')
-        mops.delete(type = 'VERT')
+
+        unselected_verts = [v for v in bm.verts if not v.select]
+        if len(unselected_verts) != 0:
+            mops.select_all(action = 'INVERT')
+            mops.delete(type = 'VERT')
+        else:
+            source_bm = bmesh.new()
+            source_bm.from_mesh(target.data)
+            deleted_faces = [f for f in bm.faces if not is_face_on_surface(f, source_bm)]
+            bmesh.ops.delete(bm, geom = deleted_faces, context = 'FACES')
+            bmesh.update_edit_mesh(slice_decal.data, True)
+            source_bm.free()
+            bm.free()
+
         mops.select_all(action = 'SELECT')
         mops.quads_convert_to_tris()
         mops.tris_convert_to_quads(face_threshold = math.pi, shape_threshold = math.pi)
