@@ -37,7 +37,8 @@ class SlapItOperator(bpy.types.Operator):
     """Slap decal on mesh"""
     bl_idname = "object.slap_it_operator"
     bl_label = "Slap it!"
-
+    bl_options = {'REGISTER', 'UNDO'}
+    
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) == 2

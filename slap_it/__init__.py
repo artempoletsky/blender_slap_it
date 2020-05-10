@@ -13,7 +13,9 @@ bl_info = {
 if "bpy" in locals():
     import importlib
     importlib.reload(slap_it)
+    SlapItOperator = slap_it.SlapItOperator
     importlib.reload(slice_it)
+    SliceItOperator = slice_it.SliceItOperator
 
 else:
     from .slap_it import SlapItOperator
