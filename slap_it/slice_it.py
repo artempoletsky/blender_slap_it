@@ -1,7 +1,27 @@
 import bpy
+import math
 
 oops = bpy.ops.object
 mops = bpy.ops.mesh
+
+def find_collection(context, item):
+    collections = item.users_collection
+    if len(collections) > 0:
+        return collections[0]
+    return context.scene.collection
+
+def make_collection(collection_name, parent_collection):
+    if collection_name in bpy.data.collections: # Does the collection already exist?
+        return bpy.data.collections[collection_name]
+    else:
+        new_collection = bpy.data.collections.new(collection_name)
+        parent_collection.children.link(new_collection) # Add the new collection under a parent
+        return new_collection
+
+def move_object_to_collection(context, object, new_collection):
+    object_collection = find_collection(context, object)
+    object_collection.objects.unlink(object)
+    new_collection.objects.link(object)
 
 def select_only(context, object):
     oops.select_all(action = 'DESELECT')
@@ -15,13 +35,14 @@ class SliceItOperator(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     thickness: bpy.props.FloatProperty(name="Slice thickness", default=0.1)
-    remove_brush: bpy.props.BoolProperty(name="Remove brush object", default=True)
 
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) == 2
 
     def assign_material(self, context, slice_decal):
+        mod = slice_decal.modifiers.new('Displace', 'DISPLACE')
+        mod.strength = 0.01
         return
 
     def unwrap_slice_decal(self, context, slice_decal):
@@ -56,7 +77,7 @@ class SliceItOperator(bpy.types.Operator):
 
         brush_dupli.select_set(True)
         oops.join()
-        self.hide_source_objects(context, target, brush)
+        # self.hide_source_objects(context, target, brush)
         select_only(context, slice_decal)
         oops.editmode_toggle()
 
@@ -64,7 +85,14 @@ class SliceItOperator(bpy.types.Operator):
         mops.intersect_boolean(operation = 'INTERSECT')
         mops.select_all(action = 'INVERT')
         mops.delete(type = 'VERT')
-        # oops.editmode_toggle()
+        mops.select_all(action = 'SELECT')
+        mops.quads_convert_to_tris()
+        mops.tris_convert_to_quads(face_threshold = math.pi, shape_threshold = math.pi)
+        oops.editmode_toggle()
+
+        collection = make_collection('Slice brushes', context.scene.collection)
+        move_object_to_collection(context, brush, collection)
+        context.view_layer.layer_collection.children['Slice brushes'].exclude = True
         #
         #
         # select_only(context, slice_decal)
