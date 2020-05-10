@@ -76,7 +76,6 @@ class SliceItOperator(bpy.types.Operator):
             mesh.uv_layers.active.data[loops[1]].uv = [1, 0]
             mesh.uv_layers.active.data[loops[2]].uv = [1, 1]
             mesh.uv_layers.active.data[loops[3]].uv = [0, 1]
-        return
 
     def hide_source_objects(self, context, target, brush):
         select_only(context, target)
@@ -107,12 +106,15 @@ class SliceItOperator(bpy.types.Operator):
 
         brush_dupli.select_set(True)
         oops.join()
-        # self.hide_source_objects(context, target, brush)
+        if self._stop_after_intersect:
+            self.hide_source_objects(context, target, brush)
         select_only(context, slice_decal)
         oops.editmode_toggle()
 
         mops.select_mode(type='VERT', use_extend = False, use_expand = False)
         mops.intersect_boolean(operation = 'INTERSECT')
+        if self._stop_after_intersect:
+            raise
         mops.select_all(action = 'INVERT')
         mops.delete(type = 'VERT')
         mops.select_all(action = 'SELECT')
@@ -123,9 +125,9 @@ class SliceItOperator(bpy.types.Operator):
         collection = make_collection('Slice brushes', context.scene.collection)
         move_object_to_collection(context, brush, collection)
         context.view_layer.layer_collection.children['Slice brushes'].exclude = True
-        #
-        #
-        # select_only(context, slice_decal)
+
+
+        select_only(context, slice_decal)
         # oops.editmode_toggle()
         return slice_decal
 
@@ -135,6 +137,7 @@ class SliceItOperator(bpy.types.Operator):
         self.assign_material(context, slice_decal)
 
     def execute(self, context):
+        self._stop_after_intersect = False
         selected_objects = context.selected_objects
         active_object = context.view_layer.objects.active
         selected_objects.remove(active_object)
