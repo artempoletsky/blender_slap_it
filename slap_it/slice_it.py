@@ -37,16 +37,17 @@ def is_face_on_surface(face, bm):
     median = face.calc_center_median()
     min_distance = float('inf')
     for f in bm.faces:
-        d = abs(geometry.distance_point_to_plane(median, f.calc_center_median(), f.normal))
+        d = abs(geometry.distance_point_to_plane(median, f.verts[0].co, f.normal))
         min_distance = min(min_distance, d)
     # if min_distance == 0:
         # face.select_set(True)
-    # print(min_distance, min_distance < 0.1)
-    return min_distance == 0
+    print(min_distance)
+    return min_distance < 0.001
 
 def sort_tris_loops(face):
     # print(len(face.edges[0].link_faces), len(face.edges[1].link_faces), len(face.edges[2].link_faces))
     base = [e for e in face.edges if len(e.link_faces) == 1][0]
+    base.select_set(True)
     # other_vert = [v for v in face.verts if not v in base.verts][0]
     loops = []
     # for
@@ -92,6 +93,7 @@ class SliceItOperator(bpy.types.Operator):
         oops.editmode_toggle()
         mops.select_all(action = 'SELECT')
         uvops.reset()
+        # mops.select_all(action = 'DESELECT')
         oops.editmode_toggle()
         mesh = slice_decal.data
         bm = bmesh.new()
@@ -124,6 +126,7 @@ class SliceItOperator(bpy.types.Operator):
         mod = brush_dupli.modifiers.new("SOLIDIFY", "SOLIDIFY")
         mod.offset = 0
         mod.thickness = self.thickness
+        mod.use_rim = False
         oops.convert(target = 'MESH')
 
         oops.editmode_toggle()
@@ -146,30 +149,26 @@ class SliceItOperator(bpy.types.Operator):
             self.hide_source_objects(context, [target, brush, target_dupli])
         select_only(context, slice_decal)
         oops.editmode_toggle()
-
-        mops.select_mode(type='VERT', use_extend = False, use_expand = False)
+        if self._stop_before_intersect:
+            raise
+        mops.select_mode(type='EDGE', use_extend = False, use_expand = False)
         mops.intersect_boolean(operation = 'INTERSECT')
-        bm = bmesh.from_edit_mesh(slice_decal.data)
+        mops.select_all(action = 'INVERT')
+        mops.delete(type = 'EDGE')
+
         if self._stop_after_intersect:
             raise
 
-        unselected_verts = [v for v in bm.verts if not v.select]
-        if len(unselected_verts) != 0:
-            mops.select_all(action = 'INVERT')
-            mops.delete(type = 'VERT')
-        else:
-            mops.select_mode(type='FACE', use_extend = False, use_expand = False)
-            source_bm = bmesh.new()
-            source_bm.from_mesh(target_dupli.data)
-            deleted_faces = [f for f in bm.faces if not is_face_on_surface(f, source_bm)]
-            bmesh.ops.delete(bm, geom = deleted_faces, context = 'FACES')
-            bmesh.update_edit_mesh(slice_decal.data, True)
-            source_bm.free()
+        mops.select_all(action = 'SELECT')
+        mops.delete(type = 'ONLY_FACE')
+        mops.select_all(action = 'SELECT')
+        mops.bridge_edge_loops()
+        mops.normals_make_consistent(inside = False)
 
-        mops.select_mode(type='FACE', use_extend = False, use_expand = False)
         if self._stop_before_triangulate:
             raise
         mops.select_all(action = 'DESELECT')
+        bm = bmesh.from_edit_mesh(slice_decal.data)
         non_quads = [f for f in bm.faces if len(f.verts) != 4]
         if len(non_quads):
             for f in non_quads:
@@ -204,6 +203,7 @@ class SliceItOperator(bpy.types.Operator):
 
     def execute(self, context):
         self._hide_source = False
+        self._stop_before_intersect = False
         self._stop_after_intersect = False
         self._stop_before_triangulate = False
         selected_objects = context.selected_objects
