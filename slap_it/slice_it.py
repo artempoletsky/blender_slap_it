@@ -1,8 +1,10 @@
 import bpy
 import math
+import bmesh
 
 oops = bpy.ops.object
 mops = bpy.ops.mesh
+uvops = bpy.ops.uv
 
 def find_collection(context, item):
     collections = item.users_collection
@@ -28,6 +30,9 @@ def select_only(context, object):
     context.view_layer.objects.active = object
     object.select_set(True)
 
+def sort_loops(face):
+    return [l.index for l in face.loops]
+
 class SliceItOperator(bpy.types.Operator):
     """Create slice decal"""
     bl_idname = "object.slice_it_operator"
@@ -46,6 +51,21 @@ class SliceItOperator(bpy.types.Operator):
         return
 
     def unwrap_slice_decal(self, context, slice_decal):
+        # print(len(context.object.data.uv_layers.active.data))
+        oops.editmode_toggle()
+        mops.select_all(action = 'SELECT')
+        uvops.reset()
+        oops.editmode_toggle()
+        mesh = slice_decal.data
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        for f in bm.faces:
+            loops = sort_loops(f)
+            print(loops)
+            mesh.uv_layers.active.data[loops[0]].uv = [0, 0]
+            mesh.uv_layers.active.data[loops[1]].uv = [1, 0]
+            mesh.uv_layers.active.data[loops[2]].uv = [1, 1]
+            mesh.uv_layers.active.data[loops[3]].uv = [0, 1]
         return
 
     def hide_source_objects(self, context, target, brush):
