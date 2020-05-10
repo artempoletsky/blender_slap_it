@@ -45,7 +45,17 @@ def is_face_on_surface(face, bm):
     return min_distance == 0
 
 def sort_tris_loops(face):
-    return [l.index for l in face.loops]
+    # print(len(face.edges[0].link_faces), len(face.edges[1].link_faces), len(face.edges[2].link_faces))
+    base = [e for e in face.edges if len(e.link_faces) == 1][0]
+    # other_vert = [v for v in face.verts if not v in base.verts][0]
+    loops = []
+    # for
+    for l in face.loops:
+        if l.vert in base.verts:
+            loops.insert(0, l.index)
+        else:
+            loops.append(l.index)
+    return loops
 
 def sort_quad_loops(face):
     if len(face.edges[0].link_faces) == 1 and len(face.edges[2].link_faces) == 1:
@@ -96,8 +106,8 @@ class SliceItOperator(bpy.types.Operator):
             else:
                 loops = sort_tris_loops(f)
                 mesh.uv_layers.active.data[loops[0]].uv = [0, 0]
-                mesh.uv_layers.active.data[loops[1]].uv = [1, 0]
-                mesh.uv_layers.active.data[loops[2]].uv = [0.5, 1]
+                mesh.uv_layers.active.data[loops[1]].uv = [0, 1]
+                mesh.uv_layers.active.data[loops[2]].uv = [1, 0.5]
 
 
     def hide_source_objects(self, context, objects):
