@@ -188,6 +188,9 @@ class SliceItOperator(bpy.types.Operator):
                 oops.join()
                 oops.editmode_toggle()
                 mops.select_all(action = 'SELECT')
+                # if hasattr(mops, 'looptools_bridge'):
+                #     mops.looptools_bridge()
+                # else:
                 mops.bridge_edge_loops()
                 mops.normals_make_consistent(inside = False)
                 oops.editmode_toggle()
@@ -208,7 +211,7 @@ class SliceItOperator(bpy.types.Operator):
         if len(non_quads):
             for f in non_quads:
                 f.select_set(True)
-            mops.quads_convert_to_tris()
+            # mops.quads_convert_to_tris()
             mops.tris_convert_to_quads(face_threshold = math.pi, shape_threshold = math.pi)
             # non_quads = [f for f in bm.faces if len(f.verts) != 4]
             # if len(non_quads):
