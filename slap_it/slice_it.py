@@ -41,7 +41,7 @@ def is_face_on_surface(face, bm):
         min_distance = min(min_distance, d)
     # if min_distance == 0:
         # face.select_set(True)
-    print(min_distance)
+    # print(min_distance)
     return min_distance < 0.001
 
 def sort_tris_loops(face):
@@ -68,25 +68,74 @@ def sort_quad_loops(face):
         return loops
     return [l.index for l in face.loops]
 
+MAT_NAME = "Slice decal material"
+
 class SliceItOperator(bpy.types.Operator):
     """Create slice decal"""
     bl_idname = "object.slice_it_operator"
     bl_label = "Slice it!"
     bl_options = {'REGISTER', 'UNDO'}
 
-    thickness: bpy.props.FloatProperty(name="Slice thickness", default=0.1)
+    thickness: bpy.props.FloatProperty(name="Slice thickness", default=0.05)
 
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) == 2
+
+    def createMaterial(self, context):
+        mat = bpy.data.materials.new(MAT_NAME)
+        mat.use_nodes = True
+        mat.blend_method = 'BLEND'
+        mat.shadow_method = 'NONE'
+        tree = mat.node_tree
+        principled = tree.nodes['Principled BSDF']
+        principled.inputs['Base Color'].default_value = [0.3, 0.3, 0.3, 1]
+        # invert = tree.nodes.new('ShaderNodeInvert')
+        # invert.location[0] = principled.location[0] - invert.width - 20
+        # tree.links.new(principled.inputs['Alpha'], invert.outputs[0])
+
+        bump = tree.nodes.new('ShaderNodeBump')
+        tree.links.new(principled.inputs['Normal'], bump.outputs[0])
+        bump.location[0] = principled.location[0] - bump.width - 20
+        bump.location[1] = bump.location[1] - bump.height - 20
+        bump.invert = True
+        bump.inputs['Distance'].default_value = 0.01
+        # bump.location[1] = invert.location[1] - invert.height - 20
+
+        ramp = tree.nodes.new('ShaderNodeValToRGB')
+        tree.links.new(bump.inputs['Height'], ramp.outputs[0])
+        tree.links.new(principled.inputs['Alpha'], ramp.outputs[0])
+        # tree.links.new(invert.inputs[0], ramp.outputs[0])
+        ramp.location[0] = bump.location[0] - ramp.width - 20
+        ramp.color_ramp.elements.new(0.5)
+        ramp.color_ramp.elements[0].color = [0, 0, 0, 1]
+        ramp.color_ramp.elements[1].color = [1, 1, 1, 1]
+        ramp.color_ramp.elements[2].color = [0, 0, 0, 1]
+        ramp.color_ramp.interpolation = 'EASE'
+
+        separate = tree.nodes.new('ShaderNodeSeparateXYZ')
+        tree.links.new(ramp.inputs[0], separate.outputs[0])
+        separate.location[0] = ramp.location[0] - separate.width - 20
+
+        uv = tree.nodes.new('ShaderNodeUVMap')
+        tree.links.new(separate.inputs[0], uv.outputs[0])
+        uv.location[0] = separate.location[0] - separate.width - 20
+
+        # tree.links.new(ramp.inputs[0], separate.outputs[0])
+        # tree.links.new(invert.inputs[0], ramp.outputs[0])
+        # # node_link = tree.links.new(socket_in, socket_out)
+        return mat
 
     def assign_material(self, context, slice_decal):
         mod = slice_decal.modifiers.new('Displace', 'DISPLACE')
         mod.strength = 0.01
         materials = slice_decal.data.materials
         materials.clear()
-        materials.append(bpy.data.materials[0])
-        return
+
+        if MAT_NAME in bpy.data.materials:
+            materials.append(bpy.data.materials[MAT_NAME])
+        else:
+            materials.append(self.createMaterial(context))
 
     def unwrap_slice_decal(self, context, slice_decal):
         # print(len(context.object.data.uv_layers.active.data))
@@ -180,7 +229,7 @@ class SliceItOperator(bpy.types.Operator):
             selected.remove(closest)
             pairs.append([o, closest])
 
-        print(pairs)
+        # print(pairs)
         joined_pairs = []
         for p in pairs:
             select_only(context, p[0])
