@@ -134,19 +134,19 @@ class SliceItOperator(bpy.types.Operator):
         oops.editmode_toggle()
 
         select_only(context, target)
+        oops.duplicate()
+        oops.convert(target = 'MESH')
         oops.editmode_toggle()
         mops.select_all(action = 'DESELECT')
         oops.editmode_toggle()
-        oops.duplicate()
-        oops.convert(target = 'MESH')
-        target_dupli = context.object
-        oops.duplicate()
+        # target_dupli = context.object
+        # oops.duplicate()
         slice_decal = context.object
 
         brush_dupli.select_set(True)
         oops.join()
         if self._hide_source:
-            self.hide_source_objects(context, [target, brush, target_dupli])
+            self.hide_source_objects(context, [target, brush])
         select_only(context, slice_decal)
         oops.editmode_toggle()
         if self._stop_before_intersect:
@@ -160,11 +160,46 @@ class SliceItOperator(bpy.types.Operator):
             raise
 
         mops.select_all(action = 'SELECT')
-        mops.delete(type = 'ONLY_FACE')
-        mops.select_all(action = 'SELECT')
-        mops.bridge_edge_loops()
-        mops.normals_make_consistent(inside = False)
+        mops.separate(type = 'LOOSE')
+        oops.editmode_toggle()
+        oops.origin_set(type = 'ORIGIN_GEOMETRY', center = 'MEDIAN')
+        selected = list(context.selected_objects)
+        pairs = []
 
+        while len(selected):
+            min_d = float('inf')
+            o = selected[0]
+            selected.remove(o)
+            closest = None
+            for o1 in selected:
+                d = abs((o.location - o1.location).length - self.thickness)
+                if d < min_d:
+                    min_d = d
+                    closest = o1
+            selected.remove(closest)
+            pairs.append([o, closest])
+
+        print(pairs)
+        joined_pairs = []
+        for p in pairs:
+            select_only(context, p[0])
+            if p[1]:
+                p[1].select_set(True)
+                oops.join()
+                oops.editmode_toggle()
+                mops.select_all(action = 'SELECT')
+                mops.bridge_edge_loops()
+                mops.normals_make_consistent(inside = False)
+                oops.editmode_toggle()
+                joined_pairs.append(context.object)
+            else:
+                oops.delete(use_global = False)
+
+        for o in joined_pairs:
+            o.select_set(True)
+        oops.join()
+        oops.editmode_toggle()
+        slice_decal = context.object
         if self._stop_before_triangulate:
             raise
         mops.select_all(action = 'DESELECT')
@@ -188,8 +223,8 @@ class SliceItOperator(bpy.types.Operator):
         move_object_to_collection(context, brush, collection)
         context.view_layer.layer_collection.children['Slice brushes'].exclude = True
 
-        select_only(context, target_dupli)
-        oops.delete(use_global = False)
+        # select_only(context, target_dupli)
+        # oops.delete(use_global = False)
         select_only(context, slice_decal)
         # oops.editmode_toggle()
         return slice_decal
