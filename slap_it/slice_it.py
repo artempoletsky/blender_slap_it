@@ -160,6 +160,7 @@ class SliceItOperator(bpy.types.Operator):
             raise
 
         mops.select_all(action = 'SELECT')
+        mops.delete(type = 'ONLY_FACE')
         mops.separate(type = 'LOOSE')
         oops.editmode_toggle()
         oops.origin_set(type = 'ORIGIN_GEOMETRY', center = 'MEDIAN')
@@ -211,7 +212,7 @@ class SliceItOperator(bpy.types.Operator):
         if len(non_quads):
             for f in non_quads:
                 f.select_set(True)
-            # mops.quads_convert_to_tris()
+            mops.quads_convert_to_tris()
             mops.tris_convert_to_quads(face_threshold = math.pi, shape_threshold = math.pi)
             # non_quads = [f for f in bm.faces if len(f.verts) != 4]
             # if len(non_quads):
