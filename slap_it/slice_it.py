@@ -126,9 +126,17 @@ class SliceItOperator(bpy.types.Operator):
         # # node_link = tree.links.new(socket_in, socket_out)
         return mat
 
-    def assign_material(self, context, slice_decal):
+    def add_modifiers(self, context, slice_decal, target):
+        slice_decal.data.use_auto_smooth = True
         mod = slice_decal.modifiers.new('Displace', 'DISPLACE')
         mod.strength = 0.01
+        mod = slice_decal.modifiers.new('DataTransfer', 'DATA_TRANSFER')
+        mod.object = target
+        mod.use_loop_data = True
+        mod.data_types_loops = {'CUSTOM_NORMAL'}
+        mod.loop_mapping = 'POLYINTERP_NEAREST'
+
+    def assign_material(self, context, slice_decal):
         materials = slice_decal.data.materials
         materials.clear()
 
@@ -185,6 +193,7 @@ class SliceItOperator(bpy.types.Operator):
         select_only(context, target)
         oops.duplicate()
         oops.convert(target = 'MESH')
+        oops.transform_apply(scale = True)
         oops.editmode_toggle()
         mops.select_all(action = 'DESELECT')
         oops.editmode_toggle()
@@ -288,6 +297,7 @@ class SliceItOperator(bpy.types.Operator):
             return
         self.unwrap_slice_decal(context, slice_decal)
         self.assign_material(context, slice_decal)
+        self.add_modifiers(context, slice_decal, target)
 
     def execute(self, context):
         self._hide_source = False
