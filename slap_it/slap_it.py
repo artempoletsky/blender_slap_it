@@ -68,9 +68,10 @@ class SlapItOperator(bpy.types.Operator):
 
         override = knife_override([source_decal_object, decal_object], decal_object)
 
+        old_camera = C.scene.camera
+
         bpy.ops.object.camera_add()
         camera = C.object
-        old_camera = C.scene.camera
         C.scene.camera = camera
         bpy.ops.view3d.camera_to_view()
         camera.select_set(False)
@@ -137,7 +138,8 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.view3d.view_camera(override)
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         bpy.ops.object.delete()
-        C.scene.camera = old_camera
+        if old_camera:
+            C.scene.camera = old_camera
         source_decal_object.select_set(True)
         C.view_layer.objects.active = source_decal_object
 
