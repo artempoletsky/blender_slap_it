@@ -1,2 +1,4 @@
 *.blend
 *.blend1
+*.pyc
+/video
