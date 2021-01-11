@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Slap it!",
     "author": "Artem Poletsky",
-    "version": (1, 0),
+    "version": (1, 0, 1),
     "blender": (2, 80, 0),
 # "location": "View3D > Add > Mesh > New Object",
     "description": "A simple decals addon",
