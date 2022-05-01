@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Slap it!",
     "author": "Artem Poletsky",
-    "version": (1, 0, 1),
-    "blender": (2, 80, 0),
+    "version": (1, 1, 0),
+    "blender": (3, 0, 3),
 # "location": "View3D > Add > Mesh > New Object",
     "description": "A simple decals addon",
     "warning": "",
@@ -87,13 +87,18 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.view3d.camera_to_view()
         camera.select_set(False)
 
-        decal_object.select_set(True)
+        # move the camera to the top decal view
         source_decal_object.select_set(True)
         C.view_layer.objects.active = source_decal_object
         bpy.ops.view3d.view_axis(type='TOP', align_active=True, relative=False)
-        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1) # redraw hack
+
+        # prepare selection for the knife project
+        source_decal_object.select_set(False)
+        decal_object.select_set(True)
         C.view_layer.objects.active = decal_object
         bpy.ops.object.editmode_toggle()
+        source_decal_object.select_set(True)
 
         bpy.ops.mesh.knife_project(override);
 
@@ -133,7 +138,10 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.object.modifier_add(type='DATA_TRANSFER')
 
         decal_object.data.use_auto_smooth = True
-        decal_object.cycles_visibility.shadow = False
+
+        decal_object.visible_shadow = False #turns off shadow on the decal in Cycles
+        decal_object.active_material.shadow_method = 'NONE' #in Eevee
+
         mod = decal_object.modifiers["DataTransfer"]
         mod.object = target_object
         mod.use_loop_data = True
