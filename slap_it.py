@@ -1,9 +1,9 @@
 bl_info = {
     "name": "Slap it!",
     "author": "Artem Poletsky",
-    "version": (1, 1, 0),
-    "blender": (3, 0, 3),
-# "location": "View3D > Add > Mesh > New Object",
+    "version": (1, 2, 0),
+    "blender": (4, 4, 3),
+    "location": "View3D > Add > Mesh > New Object",
     "description": "A simple decals addon",
     "warning": "",
     "wiki_url": "",
@@ -100,7 +100,8 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.object.editmode_toggle()
         source_decal_object.select_set(True)
 
-        bpy.ops.mesh.knife_project(override);
+        with context.temp_override(**override):
+            bpy.ops.mesh.knife_project(cut_through=False);
 
 
         bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
@@ -118,7 +119,8 @@ class SlapItOperator(bpy.types.Operator):
         bpy.ops.mesh.select_all(action='SELECT')
 
         override = {'area': override['area'], 'region': override['region'], 'edit_object': decal_object}
-        bpy.ops.uv.project_from_view(override, camera_bounds = False, scale_to_bounds=True, correct_aspect=True)
+        with context.temp_override(**override):        
+            bpy.ops.uv.project_from_view(camera_bounds = False, scale_to_bounds=True, correct_aspect=True)
 
         bpy.ops.object.editmode_toggle()
         bpy.ops.object.select_all(action='DESELECT')
@@ -137,10 +139,14 @@ class SlapItOperator(bpy.types.Operator):
 
         bpy.ops.object.modifier_add(type='DATA_TRANSFER')
 
-        decal_object.data.use_auto_smooth = True
+        # shade auto smooth workaround in >4.1
+        bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes/smooth_by_angle.blend/NodeTree/Smooth by Angle")
 
-        decal_object.visible_shadow = False #turns off shadow on the decal in Cycles
-        decal_object.active_material.shadow_method = 'NONE' #in Eevee
+        #turns off shadow on the decal
+        if bpy.context.scene.render.engine == "CYCLES":
+            decal_object.visible_shadow = False 
+        elif bpy.context.scene.render.engine == "BLENDER_EEVEE":
+            decal_object.active_material.shadow_mode = "NONE"
 
         mod = decal_object.modifiers["DataTransfer"]
         mod.object = target_object
@@ -153,8 +159,8 @@ class SlapItOperator(bpy.types.Operator):
         camera.select_set(True)
         C.view_layer.objects.active = camera
 
-#        bpy.ops.action.view_frame(override)
-        bpy.ops.view3d.view_camera(override)
+        with context.temp_override(**override):
+            bpy.ops.view3d.view_camera()
         bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         bpy.ops.object.delete()
         if old_camera:

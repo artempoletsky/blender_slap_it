@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Slap it!",
     "author": "Artem Poletsky",
-    "version": (1, 0),
-    "blender": (2, 80, 0),
+    "version": (1, 1),
+    "blender": (4, 4, 3),
     "location": "View3D > Add > Mesh > New Object",
     "description": "A simple decals addon",
     "warning": "",
@@ -61,7 +61,8 @@ class SlapItOperator(bpy.types.Operator):
 
         bpy.ops.object.modifier_add(type='DATA_TRANSFER')
 
-        active_object.data.use_auto_smooth = True
+        # shade auto smooth workaround in >4.1
+        bpy.ops.object.modifier_add_node_group(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="geometry_nodes/smooth_by_angle.blend/NodeTree/Smooth by Angle")
         mod = active_object.modifiers["DataTransfer"]
         mod.object = target_object
         mod.use_loop_data = True
